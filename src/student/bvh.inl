@@ -2,6 +2,7 @@
 #include "../rays/bvh.h"
 #include "debug.h"
 #include <stack>
+#include <iostream>
 
 namespace PT {
 
@@ -67,50 +68,239 @@ void BVH<Primitive>::build(std::vector<Primitive>&& prims, size_t max_leaf_size)
 
     // set up root node (root BVH). Notice that it contains all primitives.
     size_t root_node_addr = new_node();
-    Node& node = nodes[root_node_addr];
-    node.bbox = bb;
-    node.start = 0;
-    node.size = primitives.size();
+    Node& root = nodes[root_node_addr];
+    root.bbox = bb;
+    root.start = 0;
+    root.size = primitives.size();
 
-    // Create bounding boxes for children
-    BBox split_leftBox;
-    BBox split_rightBox;
+   //std::cout << "root_size=" << root.size << std::endl;
 
-    // compute bbox for left child
-    Primitive& p = primitives[0];
-    BBox pbb = p.bbox();
-    split_leftBox.enclose(pbb);
 
-    // compute bbox for right child
-    for(size_t i = 1; i < primitives.size(); ++i) {
-        Primitive& p = primitives[i];
-        BBox pbb = p.bbox();
-        split_rightBox.enclose(pbb);
+    size_t curr_node_addr = root_node_addr;
+    split_node(curr_node_addr, max_leaf_size);
+    //std::cout << "nodes_size=" << nodes.size() << std::endl;
+}
+
+template<typename Primitive>
+void BVH<Primitive>::split_node(size_t curr_node_addr, size_t max_leaf_size) {
+    const int NUM_PARTITIONS = 10;
+
+    if(nodes[curr_node_addr].size <= max_leaf_size) {
+        //std::cout << curr_node_addr << " at leaf" << std::endl;
+        //std::cout << nodes[curr_node_addr].size << " size at leaf" << std::endl;
+        return;
     }
 
-    // Note that by construction in this simple example, the primitives are
-    // contiguous as required. But in the students real code, students are
-    // responsible for reorganizing the primitives in the primitives array so that
-    // after a SAH split is computed, the chidren refer to contiguous ranges of primitives.
+    // need to keep track of which primitives are in which buckets
+    std::vector<size_t>* p_idx[3][NUM_PARTITIONS];
 
-    size_t startl = 0;  // starting prim index of left child
-    size_t rangel = 1;  // number of prims in left child
-    size_t startr = startl + rangel;  // starting prim index of right child
-    size_t ranger = primitives.size() - rangel; // number of prims in right child
+    // bucket in each axis
+    BBox buckets[3][NUM_PARTITIONS];
 
-    // create child nodes
-    size_t node_addr_l = new_node();
-    size_t node_addr_r = new_node();
-    nodes[root_node_addr].l = node_addr_l;
-    nodes[root_node_addr].r = node_addr_r;
 
-    nodes[node_addr_l].bbox = split_leftBox;
-    nodes[node_addr_l].start = startl;
-    nodes[node_addr_l].size = rangel;
+    // initialize the bbox for each bucket
+    for(size_t i = 0; i < NUM_PARTITIONS; i++) {
+        BBox x_bbox = BBox();
+        BBox y_bbox = BBox();
+        BBox z_bbox = BBox();
 
-    nodes[node_addr_r].bbox = split_rightBox;
-    nodes[node_addr_r].start = startr;
-    nodes[node_addr_r].size = ranger;
+        buckets[0][i] = x_bbox;
+        buckets[1][i] = y_bbox;
+        buckets[2][i] = z_bbox;
+
+        p_idx[0][i] = new std::vector<size_t>();
+        p_idx[1][i] = new std::vector<size_t>();
+        p_idx[2][i] = new std::vector<size_t>();
+    }
+
+    // put primitives in current node into buckets
+    Vec3 step_size = (nodes[curr_node_addr].bbox.max - nodes[curr_node_addr].bbox.min) * (1.0f / NUM_PARTITIONS);
+
+    for(size_t i = nodes[curr_node_addr].start; i < nodes[curr_node_addr].start + nodes[curr_node_addr].size; i++) {
+        Primitive& p = primitives[i];
+        BBox pbb = p.bbox();
+        Vec3 p_center_normalized = pbb.center() - nodes[curr_node_addr].bbox.min;
+        Vec3 p_bucket_idx = p_center_normalized / step_size;
+
+        //p_bucket_idx = clamp(p_bucket_idx, Vec3(0), Vec3(NUM_PARTITIONS - 1));
+
+        // These should never print if primitives are arranged correctly
+        if(p_bucket_idx.x < 0 || p_bucket_idx.x >= NUM_PARTITIONS) {
+            std::cout << "bucket idx is out-of-bound!" << std::endl;
+            std::cout << "pbb_center=" << pbb.center() << std::endl;
+            std::cout << "bbox_min=" << nodes[curr_node_addr].bbox.min << std::endl;
+        }
+        if(p_bucket_idx.y < 0 || p_bucket_idx.y >= NUM_PARTITIONS) {
+            std::cout << "bucket idx is out-of-bound!" << std::endl;
+            std::cout << "pbb_center=" << pbb.center() << std::endl;
+            std::cout << "bbox_min=" << nodes[curr_node_addr].bbox.min << std::endl;
+        }
+        if(p_bucket_idx.z < 0 || p_bucket_idx.z >= NUM_PARTITIONS) {
+            std::cout << "bucket idx is out-of-bound!" << std::endl;
+            std::cout << "pbb_center=" << pbb.center() << std::endl;
+            std::cout << "bbox_min=" << nodes[curr_node_addr].bbox.min << std::endl;
+        }
+
+        int p_x_bucket_idx = floor(p_bucket_idx.x);
+        int p_y_bucket_idx = floor(p_bucket_idx.y);
+        int p_z_bucket_idx = floor(p_bucket_idx.z);
+
+        p_idx[0][p_x_bucket_idx]->push_back(i);
+        buckets[0][p_x_bucket_idx].enclose(pbb);
+
+        p_idx[1][p_y_bucket_idx]->push_back(i);
+        buckets[1][p_y_bucket_idx].enclose(pbb);
+
+        p_idx[2][p_z_bucket_idx]->push_back(i);
+        buckets[2][p_z_bucket_idx].enclose(pbb);
+    }
+
+    // use SAH to find the best partitioning for the current node
+    float min_cost = FLT_MAX;
+    size_t min_axis = 0;
+    size_t min_i = 0;
+    Vec3 left_min, left_max;
+    Vec3 right_min, right_max;
+    size_t min_p_cnt_left = 0;
+    size_t min_p_cnt_right = 0;
+    float curr_node_sa_inv = 1.0f / nodes[curr_node_addr].bbox.surface_area();
+    for(size_t axis = 0; axis < 3; axis++) {         // for each axis
+        for(size_t i = 1; i < NUM_PARTITIONS; i++) { // for each plane
+            // compute SAH cost for a particular plane split along a particular axis
+            BBox split_leftBox = BBox();
+            BBox split_rightBox = BBox();
+            size_t p_cnt_left = 0;
+            size_t p_cnt_right = 0;
+            for(size_t l = 0; l < i; l++) {
+                split_leftBox.enclose(buckets[axis][l]);
+                p_cnt_left += p_idx[axis][l]->size();
+            }
+            for(size_t r = i; r < NUM_PARTITIONS; r++) {
+                split_rightBox.enclose(buckets[axis][r]);
+                p_cnt_right += p_idx[axis][r]->size();
+            }
+
+            if(p_cnt_left + p_cnt_right != nodes[curr_node_addr].size) {
+                std::cout << "i=" << i << std::endl;
+                std::cout << "p_cnt_left=" << p_cnt_left << std::endl;
+                std::cout << "p_cnt_right=" << p_cnt_right << std::endl;
+                std::cout << "node_size=" << nodes[curr_node_addr].size << std::endl;
+            }
+
+            // don't consider partition plane not resulting in actual split
+            //if(p_cnt_left == 0 || p_cnt_right == 0) continue;
+
+            float P_left = split_leftBox.surface_area() * curr_node_sa_inv;
+            float P_right = split_rightBox.surface_area() * curr_node_sa_inv;
+            float c = P_left * (float)p_cnt_left + P_right * (float)p_cnt_right;
+
+
+            if(c < min_cost) {
+                min_cost = c;
+                min_axis = axis;
+                min_i = i;
+                left_min = split_leftBox.min;
+                left_max = split_leftBox.max;
+                right_min = split_rightBox.min;
+                right_max = split_rightBox.max;
+                min_p_cnt_left = p_cnt_left;
+                min_p_cnt_right = p_cnt_right;
+            }
+        }
+    }
+
+    // rearrange the primitives
+    if(min_p_cnt_left + min_p_cnt_right != nodes[curr_node_addr].size) {
+        std::cout << "primitives count per partition don't sum up to size of node!" << std::endl;
+        std::cout << "min_p_cnt_left=" << min_p_cnt_left << std::endl;
+        std::cout << "min_p_cnt_right=" << min_p_cnt_right << std::endl;
+        std::cout << "node_size=" << nodes[curr_node_addr].size << std::endl;
+    }
+
+    std::vector<Primitive> temp_vec;
+
+
+    for(size_t l = 0; l < min_i; l++) {
+        std::vector<size_t>* bucket_p_vec = p_idx[min_axis][l];
+        for(size_t j = 0; j < bucket_p_vec->size(); j++) {
+            size_t prim_idx = bucket_p_vec->at(j);
+            temp_vec.push_back(std::move(primitives[prim_idx]));
+        }
+    }
+
+    int left_size = temp_vec.size();
+    if(min_p_cnt_left != left_size) {
+        std::cout << "primitives count on the left child does not equal min_p_cnt_left!"
+                  << std::endl;
+    }
+
+    for(size_t r = min_i; r < NUM_PARTITIONS; r++) {
+        std::vector<size_t>* bucket_p_vec = p_idx[min_axis][r];
+        for(size_t j = 0; j < bucket_p_vec->size(); j++) {
+            size_t prim_idx = bucket_p_vec->at(j);
+            temp_vec.push_back(std::move(primitives[prim_idx]));
+        }
+    }
+
+    int right_size = temp_vec.size() - left_size;
+    if(min_p_cnt_right != right_size) {
+        std::cout << "primitives count on the right child does not equal min_p_cnt_right!"
+                  << std::endl;
+    }
+
+    if(temp_vec.size() != nodes[curr_node_addr].size) {
+        std::cout << "temp_vec has more primitives than expected!"
+                  << std::endl;
+    }
+
+    // clear the original section of the primitive vector
+    primitives.erase(primitives.begin() + nodes[curr_node_addr].start,
+                     primitives.begin() + nodes[curr_node_addr].start + nodes[curr_node_addr].size);
+
+    // copy the rearranged primitives into the original vector
+    primitives.insert(primitives.begin() + nodes[curr_node_addr].start,
+                      std::make_move_iterator(temp_vec.begin()),
+                      std::make_move_iterator(temp_vec.end())); 
+
+
+    BBox min_split_leftBox = BBox(left_min, left_max);
+    BBox min_split_rightBox = BBox(right_min, right_max);
+
+    size_t startl = nodes[curr_node_addr].start;         // starting prim index of left child
+    size_t rangel = min_p_cnt_left;                      // number of prims in left child
+    size_t startr = startl + rangel;                     // starting prim index of right child
+    size_t ranger = min_p_cnt_right;                     // number of prims in right child
+
+    if(min_p_cnt_left == 0 || min_p_cnt_right == 0) {
+        return;
+    } else {
+        // create child nodes
+        size_t node_addr_l = new_node();
+        size_t node_addr_r = new_node();
+
+        nodes[curr_node_addr].l = node_addr_l;
+        nodes[node_addr_l].bbox = min_split_leftBox;
+        nodes[node_addr_l].start = startl;
+        nodes[node_addr_l].size = rangel;
+
+        nodes[curr_node_addr].r = node_addr_r;
+        nodes[node_addr_r].bbox = min_split_rightBox;
+        nodes[node_addr_r].start = startr;
+        nodes[node_addr_r].size = ranger;
+
+        split_node(node_addr_l, max_leaf_size);
+        split_node(node_addr_r, max_leaf_size); 
+    }
+
+
+
+
+    // clear the vectors of size_t
+    for(size_t i = 0; i < NUM_PARTITIONS; i++) {
+        delete p_idx[0][i];
+        delete p_idx[1][i];
+        delete p_idx[2][i];
+    }
 }
 
 template<typename Primitive>
@@ -123,12 +313,50 @@ Trace BVH<Primitive>::hit(const Ray& ray) const {
 
     // The starter code simply iterates through all the primitives.
     // Again, remember you can use hit() on any Primitive value.
-
+    
     Trace ret;
     for(const Primitive& prim : primitives) {
         Trace hit = prim.hit(ray);
         ret = Trace::min(ret, hit);
     }
+
+
+    //std::stack<size_t> tstack;
+    //tstack.push(root_idx);
+    //Vec2 times = Vec2(std::numeric_limits<float>::infinity(), std::numeric_limits<float>::infinity());
+   
+    //while(!tstack.empty()) {
+    //    size_t curr_node_idx = tstack.top();
+    //    const Node& node = nodes[curr_node_idx];
+    //    tstack.pop();
+
+    //    bool hit_bbox = node.bbox.hit(ray, times);
+    //    hit_bbox = hit_bbox && (times.x <= ray.dist_bounds.y); // if entering the box at t > current closest primitive's t, 
+    //                                                           // don't consider the bbox
+
+    //    // if intersected with the box
+    //    if(hit_bbox) {
+    //        if(node.is_leaf()) {
+    //            for(size_t i = node.start; i < node.start + node.size; i++) {
+    //                const Primitive& prim = primitives[i];
+    //                Trace hit = prim.hit(ray);
+    //                ret = Trace::min(ret, hit);
+    //            }
+    //        } else {
+    //            Vec2 time_l = Vec2(std::numeric_limits<float>::infinity(), std::numeric_limits<float>::infinity());
+    //            Vec2 time_r = Vec2(std::numeric_limits<float>::infinity(), std::numeric_limits<float>::infinity());
+
+    //            bool hit_l = nodes[node.l].bbox.hit(ray, time_l);
+    //            bool hit_r = nodes[node.r].bbox.hit(ray, time_r);
+    //            size_t node_first = (time_l.x < time_r.x) ? node.l : node.r;
+    //            size_t node_second = (time_l.x >= time_r.x) ? node.l : node.r;
+
+    //            tstack.push(node_second);
+    //            tstack.push(node_first);
+    //        }
+    //    }
+    //}
+
     return ret;
 }
 
@@ -196,8 +424,8 @@ size_t BVH<Primitive>::visualize(GL::Lines& lines, GL::Lines& active, size_t lev
         max_level = std::max(max_level, lvl);
         const Node& node = nodes[idx];
         tstack.pop();
-
         Vec3 color = lvl == level ? Vec3(1.0f, 0.0f, 0.0f) : Vec3(1.0f);
+
         GL::Lines& add = lvl == level ? active : lines;
 
         BBox box = node.bbox;

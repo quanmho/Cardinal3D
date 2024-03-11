@@ -9,7 +9,9 @@ Vec3 reflect(Vec3 dir) {
 
     // TODO (PathTracer): Task 6
     // Return reflection of dir about the surface normal (0,1,0).
-    return Vec3();
+    Vec3 dir_norm = dir.unit();
+    Vec3 out_dir = -1.0f * dir_norm + Vec3(0.0f, 2.0f * (dir_norm.y), 0.0f);
+    return out_dir;
 }
 
 Vec3 refract(Vec3 out_dir, float index_of_refraction, bool& was_internal) {
@@ -26,7 +28,32 @@ Vec3 refract(Vec3 out_dir, float index_of_refraction, bool& was_internal) {
     // you want to compute the 'input' direction that would cause this output,
     // and to do so you can simply find the direction that out_dir would refract
     // _to_, as refraction is symmetric.
-    return Vec3();
+
+    Vec3 out_dir_norm = out_dir.unit();
+    Vec3 in_dir;
+    float n_out, n_in;
+    float cos_adj = out_dir_norm.y;
+    if(out_dir_norm.y > 0) {
+        n_out = 1.0f;
+        n_in = index_of_refraction;
+    } else { // assume if out_dir_norm.y == 0, out_dir is currently in the object
+        n_in = index_of_refraction;
+        n_out = 1.0f;
+        cos_adj = -1.0f * out_dir_norm.y;
+    }
+
+    // Taken from CS148
+    float n_ratio = n_out / n_in;
+    float sqrt_term = 1.0f - (float)pow(n_ratio, 2) * (1.0f - (float)pow(cos_adj, 2));
+
+    was_internal = (sqrt_term < 0);
+
+    if(!was_internal) {
+        in_dir = Vec3(0.0f, n_ratio * cos_adj - (float)sqrt(sqrt_term), 0.0f) - n_ratio * out_dir_norm;
+    }
+
+    return in_dir;
+    //return -1.0f * out_dir;
 }
 
 BSDF_Sample BSDF_Lambertian::sample(Vec3 out_dir) const {
@@ -35,9 +62,9 @@ BSDF_Sample BSDF_Lambertian::sample(Vec3 out_dir) const {
     // Implement lambertian BSDF. Use of BSDF_Lambertian::sampler may be useful
 
     BSDF_Sample ret;
-    ret.attenuation = Spectrum(); // What is the ratio of reflected/incoming light?
-    ret.direction = Vec3();       // What direction should we sample incoming light from?
-    ret.pdf = 0.0f;               // Was was the PDF of the sampled direction?
+    ret.direction = sampler.sample(ret.pdf);
+    ret.attenuation = evaluate(Vec3(0.0f), Vec3(0.0f)); // Lambertian evaluate doesn't use the vectors
+
     return ret;
 }
 
@@ -51,9 +78,9 @@ BSDF_Sample BSDF_Mirror::sample(Vec3 out_dir) const {
     // Implement mirror BSDF
 
     BSDF_Sample ret;
-    ret.attenuation = Spectrum(); // What is the ratio of reflected/incoming light?
-    ret.direction = Vec3();       // What direction should we sample incoming light from?
-    ret.pdf = 0.0f; // Was was the PDF of the sampled direction? (In this case, the PMF)
+    ret.attenuation = reflectance; // What is the ratio of reflected/incoming light?
+    ret.direction = reflect(out_dir);       // What direction should we sample incoming light from?
+    ret.pdf = 1.0f; // Was was the PDF of the sampled direction? (In this case, the PMF)
     return ret;
 }
 
@@ -81,6 +108,28 @@ BSDF_Sample BSDF_Glass::sample(Vec3 out_dir) const {
     ret.attenuation = Spectrum(); // What is the ratio of reflected/incoming light?
     ret.direction = Vec3();       // What direction should we sample incoming light from?
     ret.pdf = 0.0f; // Was was the PDF of the sampled direction? (In this case, the PMF)
+
+    // Compute Fresnel coefficient
+    float n1 = 1.0f;
+    float n2 = index_of_refraction;
+    float cos_theta = abs(out_dir.y);
+    float R_0 = (float)pow((n1 - n2) / (n1 + n2), 2);
+    float F_r = R_0 + (1.0f - R_0) * (float)(pow(1.0f - cos_theta, 5));
+
+    if(RNG::coin_flip(F_r)) {
+        ret.attenuation = reflectance;    // What is the ratio of reflected/incoming light?
+        ret.direction = reflect(out_dir); // What direction should we sample incoming light from?
+        ret.pdf = F_r; // Was was the PDF of the sampled direction? (In this case, the PMF)
+    } else {
+        bool was_internal;
+        ret.attenuation = transmittance; // What is the ratio of reflected/incoming light?
+        ret.direction = refract(out_dir, index_of_refraction, was_internal); // What direction should we sample incoming light from?
+        if(was_internal) {
+            ret.direction = reflect(out_dir);
+        }
+        ret.pdf = 1.0f - F_r; // Was was the PDF of the sampled direction? (In this case, the PMF)
+    }
+
     return ret;
 }
 
@@ -111,9 +160,13 @@ BSDF_Sample BSDF_Refract::sample(Vec3 out_dir) const {
     // Be wary of your eta1/eta2 ratio - are you entering or leaving the surface?
 
     BSDF_Sample ret;
-    ret.attenuation = Spectrum(); // What is the ratio of reflected/incoming light?
-    ret.direction = Vec3();       // What direction should we sample incoming light from?
-    ret.pdf = 0.0f; // Was was the PDF of the sampled direction? (In this case, the PMF)
+    bool was_internal;
+    ret.attenuation = transmittance; // What is the ratio of reflected/incoming light?
+    ret.direction = refract(out_dir, index_of_refraction, was_internal); // What direction should we sample incoming light from?
+    if(was_internal) {
+        ret.direction = reflect(out_dir);
+    }
+    ret.pdf = 1.0f; // Was was the PDF of the sampled direction? (In this case, the PMF)
     return ret;
 }
 

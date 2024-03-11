@@ -43,6 +43,9 @@ struct Ray {
     Spectrum throughput = Spectrum(1.0f);
     /// Recursive depth of ray
     size_t depth = 0;
+    /// Track if ray came from discrete BSDF since the code is not adding direct lighting
+    /// for discrete BSDF
+    bool from_discrete = 0;
 
     /// The minimum and maximum distance at which this ray can encounter collisions
     /// note that this field is mutable, meaning it can be changed on const Rays

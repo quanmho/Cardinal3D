@@ -39,6 +39,8 @@ private:
     };
     size_t new_node(BBox box = {}, size_t start = 0, size_t size = 0, size_t l = 0, size_t r = 0);
 
+    void split_node(size_t curr_node_addr, size_t max_leaf_size);
+
     std::vector<Node> nodes;
     std::vector<Primitive> primitives;
     size_t root_idx = 0;
