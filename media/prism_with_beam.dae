@@ -5,8 +5,8 @@
       <author>Assimp</author>
       <authoring_tool>Assimp Exporter</authoring_tool>
     </contributor>
-    <created>2024-03-11T20:38:10</created>
-    <modified>2024-03-11T20:38:10</modified>
+    <created>2024-03-11T20:50:50</created>
+    <modified>2024-03-11T20:50:50</modified>
     <unit name="meter" meter="1" />
     <up_axis>Y_UP</up_axis>
   </asset>
@@ -49,12 +49,6 @@
     </light>
     <light id="Spot_Light_17-S3D-AREA-16-light" name="Spot_Light_17-S3D-AREA-16" >
       <technique_common>
-        <ambient>
-          <color sid="color">10 10 10</color>
-          <constant_attenuation>1</constant_attenuation>
-          <linear_attenuation>1</linear_attenuation>
-          <quadratic_attenuation>10</quadratic_attenuation>
-        </ambient>
       </technique_common>
     </light>
   </library_lights>
@@ -126,7 +120,7 @@
     <geometry id="Cylinder-mesh-S3D-13_1" name="Cylinder-mesh-S3D-13" >
       <mesh>
         <source id="Cylinder-mesh-S3D-13_1-positions" name="Cylinder-mesh-S3D-13_1-positions">
-          <float_array id="Cylinder-mesh-S3D-13_1-positions-array" count="18"> 0 1 1.5 0.86602539 -0.5 -1.5 0 1 -1.5 0.86602539 -0.5 1.5 -0.86602539 -0.5 -1.5 -0.86602539 -0.5 1.5 </float_array>
+          <float_array id="Cylinder-mesh-S3D-13_1-positions-array" count="18"> 0 1 -1.5 0 1 1.5 0.86602539 -0.5 -1.5 0.86602539 -0.5 1.5 -0.86602539 -0.5 -1.5 -0.86602539 -0.5 1.5 </float_array>
           <technique_common>
             <accessor count="6" offset="0" source="#Cylinder-mesh-S3D-13_1-positions-array" stride="3">
               <param name="X" type="float" />
@@ -141,14 +135,14 @@
         <polylist count="8" material="defaultMaterial">
           <input offset="0" semantic="VERTEX" source="#Cylinder-mesh-S3D-13_1-vertices" />
           <vcount>3 3 3 3 3 3 3 3 </vcount>
-          <p>2 0 1 1 3 4 5 3 0 4 5 2 4 2 1 1 0 3 4 3 5 2 5 0 </p>
+          <p>2 0 1 4 2 3 1 5 3 0 4 5 2 4 0 3 2 1 5 4 3 1 0 5 </p>
         </polylist>
       </mesh>
     </geometry>
     <geometry id="Square-S3D-14_1" name="Square-S3D-14" >
       <mesh>
         <source id="Square-S3D-14_1-positions" name="Square-S3D-14_1-positions">
-          <float_array id="Square-S3D-14_1-positions-array" count="12"> -4.3150001 0 -4.3150001 -4.3150001 0 4.3150001 4.3150001 0 -4.3150001 4.3150001 0 4.3150001 </float_array>
+          <float_array id="Square-S3D-14_1-positions-array" count="12"> 4.3150001 0 -4.3150001 -4.3150001 0 -4.3150001 -4.3150001 0 4.3150001 4.3150001 0 4.3150001 </float_array>
           <technique_common>
             <accessor count="4" offset="0" source="#Square-S3D-14_1-positions-array" stride="3">
               <param name="X" type="float" />
@@ -163,7 +157,7 @@
         <polylist count="2" material="defaultMaterial">
           <input offset="0" semantic="VERTEX" source="#Square-S3D-14_1-vertices" />
           <vcount>3 3 </vcount>
-          <p>2 0 1 3 2 1 </p>
+          <p>2 0 1 2 3 0 </p>
         </polylist>
       </mesh>
     </geometry>
@@ -173,7 +167,7 @@
   <library_visual_scenes>
     <visual_scene id="node" name="">
       <node id="Cylinder-mesh-S3D-13" name="Cylinder-mesh-S3D-13" type="NODE">
-        <matrix sid="matrix">0.99999994 0 0 0 0 -8.7422734e-08 -0.99999946 1.2 0 0.99999946 -8.7422734e-08 0 0 0 0 1</matrix>
+        <matrix sid="matrix">0.99999994 0 0 0 0 -8.7422727e-08 -0.9999994 1.2 0 0.9999994 -8.7422727e-08 0 0 0 0 1</matrix>
         <instance_geometry url="#Cylinder-mesh-S3D-13_1">
           <bind_material>
             <technique_common>
@@ -199,7 +193,7 @@
         <instance_light url="#Rectangle_Light_20-S3D-AREA-15-light"/>
       </node>
       <node id="Spot_Light_17-S3D-AREA-16" name="Spot_Light_17-S3D-AREA-16" type="NODE">
-        <matrix sid="matrix">1.7484555e-07 0.99999994 0 3.5 -0.99999994 1.7484555e-07 0 1.3 0 0 1 0.2 0 0 0 1</matrix>
+        <matrix sid="matrix">1.7484555e-07 0.99999994 0 1.4107938 -0.99999994 1.7484555e-07 0 1.3 0 0 1 0.2 0 0 0 1</matrix>
         <instance_light url="#Spot_Light_17-S3D-AREA-16-light"/>
       </node>
       <node id="S3D-ANIM_CAM_NODE" name="S3D-ANIM_CAM_NODE" type="NODE">
@@ -207,7 +201,7 @@
         <instance_camera url="#S3D-ANIM_CAM_NODE-camera"/>
       </node>
       <node id="S3D-RENDER_CAM_NODE" name="S3D-RENDER_CAM_NODE" type="NODE">
-        <matrix sid="matrix">-0.99984902 0.0173584 -0.00024402884 -1.3817861 0 0.014057039 0.999901 5.7104568 0.017360115 0.99975032 -0.014054654 -0.27331093 0 0 0 0.99999994</matrix>
+        <matrix sid="matrix">-0.99984902 0.0173584 -0.00024402884 -1.3817861 0 0.014057039 0.999901 5.7104573 0.017360115 0.99975032 -0.014054654 -0.27331105 0 0 0 0.99999994</matrix>
         <instance_camera url="#S3D-RENDER_CAM_NODE-camera"/>
       </node>
     </visual_scene>

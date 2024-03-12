@@ -94,6 +94,11 @@ enum aiLightSourceType
     //! rectangle and direction is its normal vector.
     aiLightSource_AREA          = 0x5,
 
+    //! An beam light is a rectangle with predefined size that only
+    //! emits light from one of its sides along the normal vector. The position is center of the
+    //! rectangle and direction is its normal vector.
+    aiLightSource_BEAM          = 0x6,
+
     /** This value is not used. It is just there to force the
      *  compiler to map this enum to a 32 Bit integer.
      */

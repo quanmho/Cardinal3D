@@ -45,7 +45,8 @@ struct Ray {
     size_t depth = 0;
     /// Track if ray came from discrete BSDF since the code is not adding direct lighting
     /// for discrete BSDF
-    bool from_discrete = 0;
+    bool from_discrete = false;
+    mutable float wavelength = 0.0f;
 
     /// The minimum and maximum distance at which this ray can encounter collisions
     /// note that this field is mutable, meaning it can be changed on const Rays

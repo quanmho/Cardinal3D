@@ -51,4 +51,22 @@ Light_Sample Rect_Light::sample(Vec3 from) const {
     return ret;
 }
 
+Light_Sample Beam_Light::sample(Vec3 from) const {
+    Light_Sample ret;
+
+    Vec2 sample = sampler.sample(ret.pdf);
+    Vec3 point(sample.x - size.x / 2.0f, 0.0f, sample.y - size.y / 2.0f);
+    Vec3 dir = Vec3(0.0f, -1.0f, 0.0f);
+
+    float cos_theta = dir.y;
+    float squared_dist = dir.norm_squared();
+    float dist = std::sqrt(squared_dist);
+
+    ret.direction = dir / dist;
+    ret.distance = dist;
+    ret.pdf *= squared_dist / std::abs(cos_theta);
+    ret.radiance = cos_theta > 0.0f ? radiance : Spectrum{};
+    return ret;
+}
+
 } // namespace PT

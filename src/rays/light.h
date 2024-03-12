@@ -70,6 +70,18 @@ struct Rect_Light {
     Samplers::Rect::Uniform sampler;
 };
 
+struct Beam_Light {
+
+    Beam_Light(Spectrum r, Vec2 s) : radiance(r), size(s), sampler(size) {
+    }
+
+    Light_Sample sample(Vec3 from) const;
+
+    Spectrum radiance;
+    Vec2 size;
+    Samplers::Rect::Uniform sampler;
+};
+
 class Light {
 public:
     Light(Directional_Light&& l, Scene_ID id, const Mat4& T = Mat4::I)
@@ -85,6 +97,10 @@ public:
         has_trans = trans != Mat4::I;
     }
     Light(Rect_Light&& l, Scene_ID id, const Mat4& T = Mat4::I)
+        : trans(T), itrans(T.inverse()), _id(id), underlying(std::move(l)) {
+        has_trans = trans != Mat4::I;
+    }
+    Light(Beam_Light&& l, Scene_ID id, const Mat4& T = Mat4::I)
         : trans(T), itrans(T.inverse()), _id(id), underlying(std::move(l)) {
         has_trans = trans != Mat4::I;
     }
@@ -106,7 +122,8 @@ public:
         return std::visit(overloaded{[](const Directional_Light&) { return true; },
                                      [](const Point_Light&) { return true; },
                                      [](const Spot_Light&) { return true; },
-                                     [](const Rect_Light&) { return false; }},
+                                     [](const Rect_Light&) { return false; },
+                                     [](const Beam_Light&) { return false; }},
                           underlying);
     }
 
@@ -123,7 +140,7 @@ private:
     bool has_trans;
     Mat4 trans, itrans;
     Scene_ID _id;
-    std::variant<Directional_Light, Point_Light, Spot_Light, Rect_Light> underlying;
+    std::variant<Directional_Light, Point_Light, Spot_Light, Rect_Light, Beam_Light> underlying;
 };
 
 } // namespace PT

@@ -81,7 +81,6 @@ Trace Triangle::hit(const Ray& ray) const {
     float t = -1.0f * dot(sxe2, e1) * scalar;
 
 
-
     bool valid_hit = (t >= ray.dist_bounds.x && t <= ray.dist_bounds.y); // was there an intersection?
     //std::cout << t << std::endl;
 

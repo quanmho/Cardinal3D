@@ -85,8 +85,9 @@ bool BBox::hit(const Ray& ray, Vec2& times) const {
     bool in_interval = (tmin < times.y);
 
     if(hit && in_interval) {
-        times.x = tmin;
-        times.y = (times.y == std::numeric_limits<float>::infinity()) ? tmax : std::max(times.y, tmax);
+        times.x = std::min(times.x, tmin);
+        //times.y = (times.y == std::numeric_limits<float>::infinity()) ? tmax : std::max(times.y, tmax);
+        times.y = std::min(times.y, tmax);
         return true;
     } else {
         return false;

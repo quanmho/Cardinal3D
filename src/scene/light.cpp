@@ -6,8 +6,7 @@
 
 #include <sstream>
 
-const char* Light_Type_Names[(int)Light_Type::count] = {"Directional", "Sphere", "Hemisphere",
-                                                        "Point",       "Spot",   "Rectangle"};
+const char* Light_Type_Names[(int)Light_Type::count] = {"Directional", "Sphere", "Hemisphere", "Point", "Spot", "Rectangle", "Beam"};
 
 Scene_Light::Scene_Light(Light_Type type, Scene_ID id, Pose p, std::string n)
     : pose(p), _id(id), _lines(1.0f) {
@@ -86,6 +85,9 @@ void Scene_Light::regen_mesh() {
         _mesh = Util::sphere_mesh(0.15f, 2);
     } break;
     case Light_Type::rectangle: {
+        _mesh = Util::quad_mesh(opt.size.x, opt.size.y);
+    } break;
+    case Light_Type::beam: {
         _mesh = Util::quad_mesh(opt.size.x, opt.size.y);
     } break;
     default: break;

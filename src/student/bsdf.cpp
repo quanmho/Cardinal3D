@@ -56,7 +56,7 @@ Vec3 refract(Vec3 out_dir, float index_of_refraction, bool& was_internal) {
     //return -1.0f * out_dir;
 }
 
-BSDF_Sample BSDF_Lambertian::sample(Vec3 out_dir) const {
+BSDF_Sample BSDF_Lambertian::sample(Vec3 out_dir, float wavelength = 0) const {
 
     // TODO (PathTracer): Task 5
     // Implement lambertian BSDF. Use of BSDF_Lambertian::sampler may be useful
@@ -72,7 +72,7 @@ Spectrum BSDF_Lambertian::evaluate(Vec3 out_dir, Vec3 in_dir) const {
     return albedo * (1.0f / PI_F);
 }
 
-BSDF_Sample BSDF_Mirror::sample(Vec3 out_dir) const {
+BSDF_Sample BSDF_Mirror::sample(Vec3 out_dir, float wavelength = 0) const {
 
     // TODO (PathTracer): Task 6
     // Implement mirror BSDF
@@ -93,7 +93,7 @@ Spectrum BSDF_Mirror::evaluate(Vec3 out_dir, Vec3 in_dir) const {
     return {};
 }
 
-BSDF_Sample BSDF_Glass::sample(Vec3 out_dir) const {
+BSDF_Sample BSDF_Glass::sample(Vec3 out_dir, float wavelength = 0) const {
 
     // TODO (PathTracer): Task 6
 
@@ -139,7 +139,7 @@ Spectrum BSDF_Glass::evaluate(Vec3 out_dir, Vec3 in_dir) const {
     return {};
 }
 
-BSDF_Sample BSDF_Diffuse::sample(Vec3 out_dir) const {
+BSDF_Sample BSDF_Diffuse::sample(Vec3 out_dir, float wavelength = 0) const {
     BSDF_Sample ret;
     ret.direction = sampler.sample(ret.pdf);
     ret.emissive = radiance;
@@ -152,17 +152,20 @@ Spectrum BSDF_Diffuse::evaluate(Vec3 out_dir, Vec3 in_dir) const {
     return {};
 }
 
-BSDF_Sample BSDF_Refract::sample(Vec3 out_dir) const {
+BSDF_Sample BSDF_Refract::sample(Vec3 out_dir, float wavelength = -1.0f) const {
 
     // TODO (PathTracer): Task 6
     // Implement pure refraction BSDF.
 
     // Be wary of your eta1/eta2 ratio - are you entering or leaving the surface?
+    float A = 1.7280f;
+    float B = 0.01342f;
+    float actual_index_of_refraction = (wavelength > 0.0f) ? cauchy_eqn(A, B, wavelength) : index_of_refraction;
 
     BSDF_Sample ret;
     bool was_internal;
     ret.attenuation = transmittance; // What is the ratio of reflected/incoming light?
-    ret.direction = refract(out_dir, index_of_refraction, was_internal); // What direction should we sample incoming light from?
+    ret.direction = refract(out_dir, actual_index_of_refraction, was_internal); // What direction should we sample incoming light from?
     if(was_internal) {
         ret.direction = reflect(out_dir);
     }

@@ -45,6 +45,7 @@ private:
     void do_trace(size_t samples);
     void accumulate(const HDR_Image& sample);
     bool tonemap();
+    Spectrum get_radiance_bsdf(BSDF_Sample bsdf_samp, bool is_discrete, Mat4 object_to_world, Ray ray, Trace hit);
 
     Gui::Widget_Render& gui;
     unsigned long long render_time, build_time;

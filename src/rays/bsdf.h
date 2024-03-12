@@ -28,7 +28,7 @@ struct BSDF_Lambertian {
     BSDF_Lambertian(Spectrum albedo) : albedo(albedo) {
     }
 
-    BSDF_Sample sample(Vec3 out_dir) const;
+    BSDF_Sample sample(Vec3 out_dir, float wavelength) const;
     Spectrum evaluate(Vec3 out_dir, Vec3 in_dir) const;
 
     Spectrum albedo;
@@ -40,7 +40,7 @@ struct BSDF_Mirror {
     BSDF_Mirror(Spectrum reflectance) : reflectance(reflectance) {
     }
 
-    BSDF_Sample sample(Vec3 out_dir) const;
+    BSDF_Sample sample(Vec3 out_dir, float wavelength) const;
     Spectrum evaluate(Vec3 out_dir, Vec3 in_dir) const;
 
     Spectrum reflectance;
@@ -52,7 +52,7 @@ struct BSDF_Refract {
         : transmittance(transmittance), index_of_refraction(ior) {
     }
 
-    BSDF_Sample sample(Vec3 out_dir) const;
+    BSDF_Sample sample(Vec3 out_dir, float wavelength) const;
     Spectrum evaluate(Vec3 out_dir, Vec3 in_dir) const;
 
     Spectrum transmittance;
@@ -65,7 +65,7 @@ struct BSDF_Glass {
         : transmittance(transmittance), reflectance(reflectance), index_of_refraction(ior) {
     }
 
-    BSDF_Sample sample(Vec3 out_dir) const;
+    BSDF_Sample sample(Vec3 out_dir, float wavelength) const;
     Spectrum evaluate(Vec3 out_dir, Vec3 in_dir) const;
 
     Spectrum transmittance;
@@ -78,7 +78,7 @@ struct BSDF_Diffuse {
     BSDF_Diffuse(Spectrum radiance) : radiance(radiance) {
     }
 
-    BSDF_Sample sample(Vec3 out_dir) const;
+    BSDF_Sample sample(Vec3 out_dir, float wavelength) const;
     Spectrum evaluate(Vec3 out_dir, Vec3 in_dir) const;
 
     Spectrum radiance;
@@ -103,8 +103,8 @@ public:
     BSDF& operator=(BSDF&& src) = default;
     BSDF(BSDF&& src) = default;
 
-    BSDF_Sample sample(Vec3 out_dir) const {
-        return std::visit(overloaded{[&out_dir](const auto& b) { return b.sample(out_dir); }},
+    BSDF_Sample sample(Vec3 out_dir, float wavelength) const {
+        return std::visit(overloaded{[&out_dir,&wavelength](const auto& b) { return b.sample(out_dir, wavelength); }},
                           underlying);
     }
 

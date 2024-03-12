@@ -61,7 +61,26 @@ Spectrum Pathtracer::trace_pixel(size_t x, size_t y) {
     //if((xy.x == 0) && (xy.y == 0)) {
     //    log_ray(out, 10.0f);
     //}
-    return trace_ray(out);
+
+    Spectrum final = Spectrum(0.0f);
+    Vec3 xyz_total = Vec3(0.0f);
+    for(float nm = 420.0f; nm <= 620.0f; nm = nm + 10.0f) {
+        Ray wave_samp = Ray(out.point, out.dir);
+        wave_samp.wavelength = nm;
+        Vec3 xyz = xyzfit_1931(nm);
+        //Spectrum rgb_scalar = xyz2srgb(xyz);
+        Spectrum radiance = trace_ray(wave_samp);
+        //final += rgb_scalar * radiance.luma();
+        xyz_total += xyz * radiance.luma();
+    }
+
+    //final *= 1.0f / 20.0f;
+    xyz_total *= 1.0f / 20.0f;
+    final = xyz2srgb(xyz_total);
+
+    //final = trace_ray(out);
+
+    return final;
 }
 
 Spectrum Pathtracer::trace_ray(const Ray& ray) {
@@ -96,7 +115,6 @@ Spectrum Pathtracer::trace_ray(const Ray& ray) {
     Mat4 object_to_world = Mat4::rotate_to(hit.normal);
     Mat4 world_to_object = object_to_world.T();
     Vec3 out_dir = world_to_object.rotate(ray.point - hit.position).unit();
-    BSDF_Sample bsdf_samp = bsdf.sample(out_dir);
 
     // Debugging: if the normal colors flag is set, return the normal color
     if(debug_data.normal_colors) return Spectrum::direction(hit.normal);
@@ -195,32 +213,48 @@ Spectrum Pathtracer::trace_ray(const Ray& ray) {
     // (5) Add contribution due to incoming light with proper weighting. Remember to add in
     // the BSDF sample emissive term.
     
-    
+    //if(bsdf.is_discrete() && ray.wavelength > 0.0f) {
+
+    BSDF_Sample bsdf_samp = bsdf.sample(out_dir, ray.wavelength); // wavelength here doesn't matter
+
     if(ray.depth == 0 || ray.from_discrete) {
-        radiance_out += bsdf_samp.emissive; 
+        radiance_out += bsdf_samp.emissive;
     }
+
+    radiance_out += get_radiance_bsdf(bsdf_samp, bsdf.is_discrete(), object_to_world, ray, hit);
     
-    float cos_theta = (bsdf.is_discrete()) ? 1.0f : abs(bsdf_samp.direction.y);
+
+
+    
+
+    return radiance_out;
+}
+
+Spectrum Pathtracer::get_radiance_bsdf(BSDF_Sample bsdf_samp, bool is_discrete, Mat4 object_to_world, Ray ray, Trace hit) {
+
+    Spectrum radiance_out = Spectrum(0.0f);
+    
+    float cos_theta = (is_discrete) ? 1.0f : abs(bsdf_samp.direction.y);
     Vec3 in_dir = object_to_world.rotate(bsdf_samp.direction);
-    //cos_theta = dot(in_dir, hit.normal);
-    // throughput for new ray
+    // cos_theta = dot(in_dir, hit.normal);
+    //  throughput for new ray
     Spectrum throughput_new = ray.throughput * (bsdf_samp.attenuation * cos_theta) / bsdf_samp.pdf;
     throughput_new.r = std::min(std::max(throughput_new.r, 0.0f), 1.0f);
     throughput_new.g = std::min(std::max(throughput_new.g, 0.0f), 1.0f);
     throughput_new.b = std::min(std::max(throughput_new.b, 0.0f), 1.0f);
 
-    //float q = 1 - std::max(std::max(throughput_new.r, throughput_new.g), throughput_new.b);
+    // float q = 1 - std::max(std::max(throughput_new.r, throughput_new.g), throughput_new.b);
     float q = 1 - throughput_new.luma();
     bool terminate = RNG::unit() < q;
     terminate = false;
     if(!terminate) {
         Ray new_ray = Ray(hit.position, in_dir);
         new_ray.dist_bounds.x = EPS_F;
-        //throughput_new *= 1.0f / (1.0f - q);
-        //throughput_new = Spectrum(1.0f);
+        // throughput_new *= 1.0f / (1.0f - q);
         new_ray.throughput = throughput_new;
         new_ray.depth = ray.depth + 1;
-        new_ray.from_discrete = bsdf.is_discrete();
+        new_ray.from_discrete = is_discrete;
+        new_ray.wavelength = ray.wavelength;
         radiance_out += throughput_new * trace_ray(new_ray);
     }
 

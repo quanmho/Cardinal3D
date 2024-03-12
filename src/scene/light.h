@@ -11,7 +11,7 @@
 #include "object.h"
 #include "pose.h"
 
-enum class Light_Type : int { directional, sphere, hemisphere, point, spot, rectangle, count };
+enum class Light_Type : int { directional, sphere, hemisphere, point, spot, rectangle, beam, count };
 extern const char* Light_Type_Names[(int)Light_Type::count];
 
 class Scene_Light {

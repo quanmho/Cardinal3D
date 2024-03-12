@@ -461,6 +461,12 @@ static Scene_Light::Options load_light(aiLight* ai_light, bool hemi, bool sphere
         opt.size.y = ai_light->mSize.y;
         color = ai_light->mColorDiffuse;
     } break;
+    case aiLightSource_BEAM: {
+        opt.type = Light_Type::beam;
+        opt.size.x = ai_light->mSize.x;
+        opt.size.y = ai_light->mSize.y;
+        color = ai_light->mColorDiffuse;
+    } break;
     default: break;
     }
 
@@ -1039,6 +1045,14 @@ static std::string write_light(aiLight* ai_light, const Scene_Light::Options& op
     case Light_Type::rectangle: {
         // the collada exporter literally just ignores area lights ????????
         ai_light->mType = aiLightSource_AMBIENT;
+        ai_light->mColorAmbient = aiColor3D(r.r, r.g, r.b);
+        name += "-S3D-" + AREA_TAG + "-" + std::to_string(id);
+        ai_light->mAttenuationConstant = opt.size.x;
+        ai_light->mAttenuationLinear = opt.size.y;
+    } break;
+    case Light_Type::beam: {
+        // the collada exporter literally just ignores area lights ????????
+        ai_light->mType = aiLightSource_BEAM;
         ai_light->mColorAmbient = aiColor3D(r.r, r.g, r.b);
         name += "-S3D-" + AREA_TAG + "-" + std::to_string(id);
         ai_light->mAttenuationConstant = opt.size.x;

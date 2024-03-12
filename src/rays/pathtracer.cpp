@@ -73,6 +73,24 @@ void Pathtracer::build_lights(Scene& layout_scene, std::vector<Object>& objs) {
                     Object(std::move(Util::quad_mesh(light.opt.size.x, light.opt.size.y)),
                            light.id(), idx, light.pose.transform()));
             } break;
+            case Light_Type::beam: {
+                lights.push_back(
+                    Light(Beam_Light(r, light.opt.size), light.id(), light.pose.transform()));
+
+                unsigned int idx = 0;
+                auto entry = mat_cache.find(light.id());
+                if(entry != mat_cache.end()) {
+                    idx = (unsigned int)entry->second;
+                    materials[entry->second] = BSDF(BSDF_Diffuse(r));
+                } else {
+                    idx = (unsigned int)materials.size();
+                    mat_cache[light.id()] = materials.size();
+                    materials.push_back(BSDF(BSDF_Diffuse(r)));
+                }
+                objs.push_back(
+                    Object(std::move(Util::quad_mesh(light.opt.size.x, light.opt.size.y)),
+                           light.id(), idx, light.pose.transform()));
+            } break;
             default: return;
             }
         }

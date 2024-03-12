@@ -315,6 +315,7 @@ Trace BVH<Primitive>::hit(const Ray& ray) const {
     // Again, remember you can use hit() on any Primitive value.
     
     Trace ret;
+
     for(const Primitive& prim : primitives) {
         Trace hit = prim.hit(ray);
         ret = Trace::min(ret, hit);
@@ -322,40 +323,103 @@ Trace BVH<Primitive>::hit(const Ray& ray) const {
 
 
     //std::stack<size_t> tstack;
-    //tstack.push(root_idx);
+    ////tstack.push(root_idx);
     //Vec2 times = Vec2(std::numeric_limits<float>::infinity(), std::numeric_limits<float>::infinity());
    
+    ////check if ray hit the root first before entering while-loop
+    //const Node& root = nodes[root_idx];
+    //bool hit_root = root.bbox.hit(ray, times);
+    //if(hit_root) {
+    //    if(root.is_leaf()) {
+    //        for(size_t i = root.start; i < root.start + root.size; i++) {
+    //            const Primitive& prim = primitives[i];
+    //            Trace hit = prim.hit(ray);
+    //            ret = Trace::min(ret, hit);
+    //        }
+    //    } else {
+    //         Vec2 time_l = Vec2(std::numeric_limits<float>::infinity(), std::numeric_limits<float>::infinity());
+    //         Vec2 time_r = Vec2(std::numeric_limits<float>::infinity(), std::numeric_limits<float>::infinity());
+
+    //        bool hit_l = nodes[root.l].bbox.hit(ray, time_l);
+    //        bool hit_r = nodes[root.r].bbox.hit(ray, time_r);
+
+    //        // if entering the box at t > current closest primitive's t,
+    //        // don't consider the bbox
+    //        hit_l = hit_l && (time_l.x <= ray.dist_bounds.y);
+    //        hit_r = hit_r && (time_r.x <= ray.dist_bounds.y);
+
+    //        bool hit_first, hit_second;
+    //        size_t node_first, node_second;
+
+    //        if (time_l.x < time_r.x) {
+    //            node_first = root.l;
+    //            node_second = root.r;
+    //            hit_first = hit_l;
+    //            hit_second = hit_r;
+    //        } else {
+    //            node_first = root.r;
+    //            node_second = root.l;
+    //            hit_first = hit_r;
+    //            hit_second = hit_l;
+    //        }
+
+    //        if (hit_second) {
+    //            tstack.push(node_second);
+
+    //        }
+    //        if (hit_first) {
+    //            tstack.push(node_first);
+    //        }
+    //    }
+    //}
+
     //while(!tstack.empty()) {
     //    size_t curr_node_idx = tstack.top();
     //    const Node& node = nodes[curr_node_idx];
     //    tstack.pop();
 
-    //    bool hit_bbox = node.bbox.hit(ray, times);
-    //    hit_bbox = hit_bbox && (times.x <= ray.dist_bounds.y); // if entering the box at t > current closest primitive's t, 
-    //                                                           // don't consider the bbox
+    //    if (node.is_leaf()) {
+    //        for(size_t i = node.start; i < node.start + node.size; i++) {
+    //            const Primitive& prim = primitives[i];
+    //            Trace hit = prim.hit(ray);
+    //            ret = Trace::min(ret, hit);
+    //        }
+    //    } else {
+    //        Vec2 time_l = Vec2(std::numeric_limits<float>::infinity(), std::numeric_limits<float>::infinity());
+    //        Vec2 time_r = Vec2(std::numeric_limits<float>::infinity(), std::numeric_limits<float>::infinity());
 
-    //    // if intersected with the box
-    //    if(hit_bbox) {
-    //        if(node.is_leaf()) {
-    //            for(size_t i = node.start; i < node.start + node.size; i++) {
-    //                const Primitive& prim = primitives[i];
-    //                Trace hit = prim.hit(ray);
-    //                ret = Trace::min(ret, hit);
-    //            }
+    //        bool hit_l = nodes[node.l].bbox.hit(ray, time_l);
+    //        bool hit_r = nodes[node.r].bbox.hit(ray, time_r);
+
+    //        // if entering the box at t > current closest primitive's t,
+    //        // don't consider the bbox
+    //        hit_l = hit_l && (time_l.x <= ray.dist_bounds.y);
+    //        hit_r = hit_r && (time_r.x <= ray.dist_bounds.y);
+
+    //        bool hit_first, hit_second;
+    //        size_t node_first, node_second;
+
+    //        if(time_l.x < time_r.x) {
+    //            node_first = node.l;
+    //            node_second = node.r;
+    //            hit_first = hit_l;
+    //            hit_second = hit_r;
     //        } else {
-    //            Vec2 time_l = Vec2(std::numeric_limits<float>::infinity(), std::numeric_limits<float>::infinity());
-    //            Vec2 time_r = Vec2(std::numeric_limits<float>::infinity(), std::numeric_limits<float>::infinity());
+    //            node_first = node.r;
+    //            node_second = node.l;
+    //            hit_first = hit_r;
+    //            hit_second = hit_l;
+    //        }
 
-    //            bool hit_l = nodes[node.l].bbox.hit(ray, time_l);
-    //            bool hit_r = nodes[node.r].bbox.hit(ray, time_r);
-    //            size_t node_first = (time_l.x < time_r.x) ? node.l : node.r;
-    //            size_t node_second = (time_l.x >= time_r.x) ? node.l : node.r;
-
+    //        if(hit_second) {
     //            tstack.push(node_second);
+    //        }
+    //        if(hit_first) {
     //            tstack.push(node_first);
     //        }
     //    }
     //}
+
 
     return ret;
 }

@@ -488,6 +488,11 @@ void Manager::light_edit_gui(Undo& undo, Scene_Light& light) {
                           std::numeric_limits<float>::max());
         activate();
     } break;
+    case Light_Type::beam: {
+        ImGui::DragFloat2("Size", light.opt.size.data, 0.1f, 0.0f,
+                          std::numeric_limits<float>::max());
+        activate();
+    } break;
     default: break;
     }
 
@@ -719,6 +724,25 @@ void Manager::UInew_light(Scene& scene, Undo& undo) {
 
         if(ImGui::Button("Add")) {
             Scene_Light light(Light_Type::rectangle, scene.reserve_id(), {});
+            light.opt.spectrum = color;
+            light.opt.intensity = intensity;
+            light.opt.size = size;
+            light.dirty();
+            undo.add_light(std::move(light));
+            new_light_window = false;
+        }
+        ImGui::PopID();
+    }
+
+    if(ImGui::CollapsingHeader("Beam Light (Rectangle)")) {
+        ImGui::PushID(idx++);
+        static Vec2 size = Vec2(1.0f);
+
+        ImGui::InputFloat2("Size", size.data, "%.2f");
+        size = clamp(size, Vec2(0.0f), size);
+
+        if(ImGui::Button("Add")) {
+            Scene_Light light(Light_Type::beam, scene.reserve_id(), {});
             light.opt.spectrum = color;
             light.opt.intensity = intensity;
             light.opt.size = size;
