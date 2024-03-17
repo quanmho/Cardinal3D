@@ -83,6 +83,16 @@ inline Spectrum xyz2srgb(Vec3 xyz) {
     return Spectrum(r, g, b);
 }
 
+inline Vec3 srgb2xyz(Vec3 rgb) {
+    float x = 0.4124564f * rgb.x + 0.3575761f * rgb.y + 0.1804375f * rgb.z;
+    float y = 0.2126729f * rgb.x + 0.7151522f * rgb.y + 0.0721750f * rgb.z;
+    float z = 0.0193339f * rgb.x + 0.1191920f * rgb.y + 0.9503041f * rgb.z;
+    x = clamp(x, 0.0f, 1.0f);
+    y = clamp(y, 0.0f, 1.0f);
+    z = clamp(z, 0.0f, 1.0f);
+    return Vec3(x, y, z);
+}
+
 #include "bbox.h"
 #include "mat4.h"
 #include "quat.h"

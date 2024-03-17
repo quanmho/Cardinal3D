@@ -71,10 +71,10 @@ Spectrum Pathtracer::trace_pixel(size_t x, size_t y) {
         //Spectrum rgb_scalar = xyz2srgb(xyz);
         Spectrum radiance = trace_ray(wave_samp);
         //final += rgb_scalar * radiance.luma();
-        xyz_total += xyz * radiance.luma();
+        //Vec3 ret_xyz = srgb2xyz(Vec3(radiance.r, radiance.g, radiance.b));
+        xyz_total += xyz * radiance.luma(); // assume white light, all white mat so radiance of all components are the same
     }
 
-    //final *= 1.0f / 20.0f;
     xyz_total *= 1.0f / 20.0f;
     final = xyz2srgb(xyz_total);
 

@@ -160,7 +160,7 @@ BSDF_Sample BSDF_Refract::sample(Vec3 out_dir, float wavelength = -1.0f) const {
     // Be wary of your eta1/eta2 ratio - are you entering or leaving the surface?
     float A = 1.7280f;
     float B = 0.01342f;
-    float actual_index_of_refraction = (wavelength > 0.0f) ? cauchy_eqn(A, B, wavelength) : index_of_refraction;
+    float actual_index_of_refraction = (wavelength > 0.0f) ? cauchy_eqn(A, B, wavelength) : cauchy_eqn(A, B, 520.0f);
 
     BSDF_Sample ret;
     bool was_internal;
